@@ -1,0 +1,11 @@
+*
+!.gitignore
+!README.md
+!LICENSE
+
+!Makefile
+!docker-compose.yml
+!scheme.sql
+
+!src/
+!src/*
