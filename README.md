@@ -1,9 +1,10 @@
 # Postgres tcp proxy logging server
 
 C/C++ Postgres proxy that logs client's sql queries to a log file.<br>
-Default log file location: "/tmp/sql_queries.log" (see Makefile).
-<br><br>
-Based on my project [motobep/tcp_udp_epoll_server ](https://github.com/motobep/tcp_udp_epoll_server)
+Default log file location: "/tmp/sql_queries.log" (see Makefile).<br>
+*Make sure that ssl is disabled in Postgres.*<br><br>
+Based on my project [motobep/tcp_udp_epoll_server ](https://github.com/motobep/tcp_udp_epoll_server)<br>
+\([README на Русском](README.ru.md)\)
 
 ## Dependencies
 
@@ -64,7 +65,7 @@ Postgres must be configured, listening on 6432 port
 make stress_test
 ```
 
-## Example
+## Usage example
 
 In one terminal:
 ```bash
