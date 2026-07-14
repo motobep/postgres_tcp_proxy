@@ -2,16 +2,11 @@
 #define UTILS
 
 #include <arpa/inet.h>
-#include <cstdio>
 
-#include <iostream>
 #include <format>
+#include <iostream>
 
-#include "./consts.cpp"
-
-
-using std::cout;
-using std::endl;
+#include "consts.h"
 
 inline void err(const char *msg) {
   perror(msg);
@@ -20,9 +15,9 @@ inline void err(const char *msg) {
 
 inline void print_bytes_as_hex(const unsigned char *buffer, size_t length) {
   for (size_t i = 0; i < length; i++) {
-      cout << std::format("{:02X} ", buffer[i]);
+    std::cout << std::format("{:02X} ", buffer[i]);
   }
-  cout << "\n";
+  std::cout << "\n";
 }
 
 inline void fill_sockaddr_in(struct sockaddr_in *server_addr, const char *ip,
@@ -36,7 +31,7 @@ inline void fill_sockaddr_in(struct sockaddr_in *server_addr, const char *ip,
   server_addr->sin_port = htons(port);
   server_addr->sin_family = AF_INET;
 
-  cout << std::format("Filled server sockaddr_in for '{}:{}'\n", ip, port);
+  std::cout << std::format("Filled server sockaddr_in for '{}:{}'\n", ip, port);
 }
 
 inline ssize_t my_send(int sockfd, const unsigned char *buffer, size_t length) {

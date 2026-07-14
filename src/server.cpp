@@ -1,27 +1,141 @@
-#include <arpa/inet.h>
-#include <cerrno>
-#include <cstdio>
-#include <cstdlib>
-#include <memory>
 #include <sys/epoll.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <unistd.h>
-
-#include <iostream>
 
 #include <array>
+#include <iostream>
+#include <map>
+#include <memory>
 #include <span>
 
-#include "./consts.cpp"
-#include "Connection.cpp"
+#include "Connection.h"
+#include "Logger.h"
+#include "consts.h"
 #include "utils.h"
-
-#define LOGGER_IMPLEMENTATION
-#include "logger.h"
 
 using std::cout;
 using std::endl;
+
+int make_tcp_listener(const char *server_ip, uint16_t server_port);
+bool str_to_uint16(const char *str, uint16_t *res);
+
+class ConnectionsPool {
+  std::map<int, std::shared_ptr<Connection>> connections;
+
+public:
+  std::shared_ptr<Connection> get(int sockfd) { return connections[sockfd]; }
+  void add(std::shared_ptr<Connection> conn) {
+    connections[conn->fds->client_fd] = conn;
+    connections[conn->fds->server_fd] = conn;
+  }
+  void remove(int sockfd) {
+    auto conn = connections[sockfd];
+    connections.erase(conn->fds->client_fd);
+    connections.erase(conn->fds->server_fd);
+  }
+};
+
+int main(int argc, char *argv[]) {
+  // WARNING: May error on bad args
+  std::span<char *> args(argv, argc);
+  char *log_file = args[1];
+  char *server_ip = args[2];
+
+  uint16_t server_port{0};
+  if (!str_to_uint16(args[3], &server_port)) {
+    return 1;
+  }
+
+  std::shared_ptr<Logger> logger_p = std::make_shared<Logger>(log_file);
+  if (!logger_p->is_open()) {
+    perror("logger failed to open");
+    return 1;
+  }
+
+  std::array<unsigned char, CONSTS::buffer_size> msg{};
+  ssize_t msg_len{-1};
+  int new_fd{-1};
+
+  int eventsCount = 0;
+  int epoll_fd = epoll_create1(0);
+  if (epoll_fd == -1) {
+    perror("epoll_fd error");
+    return 1;
+  }
+  std::array<struct epoll_event, CONSTS::max_epoll_events> epollEvents{};
+
+  // Set TCP listener
+  int tcp_listener = make_tcp_listener(server_ip, server_port);
+
+  struct epoll_event server_evt{.events = EPOLLIN,
+                                .data = {.fd = tcp_listener}};
+  if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, tcp_listener, &server_evt) == -1)
+    err("Bad tcp_listener epoll_ctl");
+
+  int sockfd = -1;
+
+  cout << "Epolling\n";
+
+  struct sockaddr_in client_addr{};
+  socklen_t client_addr_len = sizeof(struct sockaddr_in);
+
+  ConnectionsPool connectionsPool;
+
+  while (true) {
+    const int epoll_timeout = -1;
+    // Uncomment bello If you want Non-blocking epoll behaviour
+    // const int epoll_timeout = 500;
+    eventsCount = epoll_wait(epoll_fd, epollEvents.data(),
+                             CONSTS::max_epoll_events, epoll_timeout);
+    if (epoll_timeout != -1 && eventsCount == 0) {
+      cout << "Non-blocking. Doing other stuff\n";
+    }
+
+    for (int i = 0; i < eventsCount; i++) {
+      uint32_t events = epollEvents.at(i).events;
+      sockfd = epollEvents.at(i).data.fd;
+      if (events & EPOLLIN) {
+        if (sockfd == tcp_listener) {
+          cout << "Accept connection\n";
+          new_fd = accept(tcp_listener, (struct sockaddr *)&client_addr,
+                          &client_addr_len);
+
+          if (new_fd == -1)
+            err("Bad new_fd");
+
+          if (new_fd > 0) {
+            auto conn = std::make_shared<Connection>(logger_p);
+            conn->create_connection(epoll_fd, new_fd);
+            connectionsPool.add(conn);
+
+            cout << "Added new_fd+events: " << new_fd << endl;
+          } else {
+            perror("accept error");
+          }
+        } else {
+          // cout << "Handle tcp client message\n";
+
+          msg_len = recv(sockfd, msg.data(), sizeof(msg.data()), 0);
+          // cout << "\tafter recv\n";
+          if (msg_len > 0) {
+            msg.at(msg_len) = 0;
+            cout << ">> Proxying fd " << sockfd << endl;
+            // print_bytes_as_hex(msg, msg_len);
+            auto conn = connectionsPool.get(sockfd);
+            conn->handle_reqest(sockfd, msg.data(), msg_len);
+            cout << "<<\n\n";
+          } else {
+            cout << "Hanging\n";
+            connectionsPool.remove(sockfd);
+          }
+        }
+      } else if (events & EPOLLERR || events & EPOLLHUP) {
+        cout << "Error or hup\n";
+        connectionsPool.remove(sockfd);
+      }
+    }
+  }
+
+  return 0;
+}
 
 int make_tcp_listener(const char *server_ip, uint16_t server_port) {
   struct sockaddr_in server_addr{};
@@ -58,108 +172,6 @@ bool str_to_uint16(const char *str, uint16_t *res) {
   if (errno || end == str || *end != '\0' || val < 0 || val >= max_uint16) {
     return false;
   }
-  *res = (uint16_t)val;
+  *res = static_cast<uint16_t>(val);
   return true;
-}
-
-int main(int argc, char *argv[]) {
-  // WARNING: May error on bad args
-  std::span<char *> args{argv, size_t(argc)};
-  char *log_file = args[1];
-  char *server_ip = args[2];
-
-  uint16_t server_port{0};
-  if (!str_to_uint16(args[3], &server_port)) {
-    return 1;
-  }
-
-  // TODO: handle error
-  std::shared_ptr<Logger> logger_p = std::make_shared<Logger>(log_file);
-
-  std::array<unsigned char, CONSTS::buffer_size> msg{};
-  ssize_t msg_len{-1};
-  int new_fd{-1};
-
-  int eventsCount = 0;
-  int epoll_fd = epoll_create1(0);
-  if (epoll_fd == -1) {
-    perror("epoll_fd error");
-    exit(1);
-  }
-  std::array<struct epoll_event, CONSTS::max_epoll_events> epollEvents{};
-
-  // Set TCP listener
-  int tcp_listener = make_tcp_listener(server_ip, server_port);
-
-  struct epoll_event server_evt{.events = EPOLLIN,
-                                .data = {.fd = tcp_listener}};
-  if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, tcp_listener, &server_evt) == -1)
-    err("Bad tcp_listener epoll_ctl");
-
-  int sockfd = -1;
-
-  cout << "Epolling\n";
-
-  struct sockaddr_in client_addr{};
-  socklen_t client_addr_len = sizeof(struct sockaddr_in);
-
-  std::map<int, Connection *> CONNECTIONS;
-
-  while (true) {
-    const int epoll_timeout = -1;
-    // Uncomment bello If you want Non-blocking epoll behaviour
-    // const int epoll_timeout = 500;
-    eventsCount = epoll_wait(epoll_fd, epollEvents.data(),
-                             CONSTS::max_epoll_events, epoll_timeout);
-    if (epoll_timeout != -1 && eventsCount == 0) {
-      cout << "Non-blocking. Doing other stuff\n";
-    }
-
-    for (int i = 0; i < eventsCount; i++) {
-      uint32_t events = epollEvents.at(i).events;
-      sockfd = epollEvents.at(i).data.fd;
-      if (events & EPOLLIN) {
-        if (sockfd == tcp_listener) {
-          cout << "Accept connection\n";
-          new_fd = accept(tcp_listener, (struct sockaddr *)&client_addr,
-                          &client_addr_len);
-
-          if (new_fd == -1)
-            err("Bad new_fd");
-
-          if (new_fd > 0) {
-            Connection connection{logger_p};
-            connection.add_connections_pair(epoll_fd, new_fd);
-            CONNECTIONS[new_fd] = &connection;
-
-            cout << "Added new_fd+events: " << new_fd << endl;
-          } else {
-            perror("accept error");
-          }
-        } else {
-          // cout << "Handle tcp client message\n";
-
-          msg_len = recv(sockfd, msg.data(), sizeof(msg.data()), 0);
-          // cout << "\tafter recv\n";
-          auto conn = CONNECTIONS[sockfd];
-          if (msg_len > 0) {
-            msg.at(msg_len) = 0;
-            cout << ">> Proxying fd " << sockfd << endl;
-            // print_bytes_as_hex(msg, msg_len);
-            conn->handle_reqest(sockfd, msg.data(), msg_len);
-            cout << "<<\n\n";
-          } else {
-            cout << "Hanging\n";
-            conn->remove_connections_pair(sockfd);
-          }
-        }
-      } else if (events & EPOLLERR || events & EPOLLHUP) {
-        cout << "Error or hup\n";
-        auto conn = CONNECTIONS[sockfd];
-        conn->remove_connections_pair(sockfd);
-      }
-    }
-  }
-
-  return 0;
 }

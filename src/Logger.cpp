@@ -1,7 +1,16 @@
-#include "logger.h"
+#include <arpa/inet.h>
 
-// TODO: rule of 5
+#include <chrono>
+#include <format>
+#include <iostream>
+
+#include "Logger.h"
+
+using std::cout;
+
 Logger::Logger(const char *filename) : fout(std::ofstream(filename)) {}
+
+bool Logger::is_open() { return fout.is_open(); }
 
 void Logger::log_query(const char *query) {
   auto now = std::chrono::system_clock::now();

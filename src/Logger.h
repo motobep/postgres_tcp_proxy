@@ -1,32 +1,22 @@
 #ifndef LOGGER
 #define LOGGER
 
-#include <arpa/inet.h>
-#include <chrono>
-#include <cstdarg>
-#include <cstdint>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <ctime>
-
-#include <format>
 #include <fstream>
-#include <iostream>
-
-#include <array>
 #include <string>
 
-#include "./consts.cpp"
-
-using std::cout;
+#include "consts.h"
 
 class Logger {
   std::ofstream fout;
 
 public:
   Logger(const char *filename);
+  Logger(const Logger &) = delete;
+  Logger &operator=(const Logger &) = delete;
+  Logger(Logger &&) = delete;
+  Logger &operator=(Logger &&) = delete;
 
+  bool is_open();
   void log_query(const char *query);
 
   ~Logger();
