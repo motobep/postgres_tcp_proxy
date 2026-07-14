@@ -7,7 +7,7 @@ build_n_run:
 	make build && make run
 
 build: $(SRC)/server.cpp
-	$(CXX) $(FLAGS) $(SRC)/server.cpp -o server
+	$(CXX) $(FLAGS) $(SRC)/server.cpp $(SRC)/logger.cpp -o server
 
 run: server
 	./server "/tmp/sql_queries.log" "0.0.0.0" "8888"

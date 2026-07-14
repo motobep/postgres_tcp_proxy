@@ -1,15 +1,15 @@
 #include <iostream>
 #include <map>
+#include <memory>
 #include <sys/epoll.h>
 #include <unistd.h>
+#include <utility>
 
 #include "utils.h"
 
 #include "logger.h"
 
-#define MAX_QUERY_SIZE 65535
-#define POSTGRES_IP "127.0.0.1"
-#define POSTGRES_PORT 6432
+#include "consts.cpp"
 
 using std::cout;
 using std::endl;
@@ -25,19 +25,23 @@ std::map<int, ProxyConn *> PROXY_CONNECTIONS;
 
 class Connection {
 
-  FILE *LOG_FP;
+  std::shared_ptr<Logger> logger_p;
+
+  // ProxyConn clientConn;
+  // ProxyConn serverConn;
 
 public:
-  Connection(FILE *log_fp) : LOG_FP(log_fp) {}
+  Connection(std::shared_ptr<Logger> logger) : logger_p(std::move(logger)) {}
   void add_connections_pair(int epoll_fd, int new_fd) {
-    int sockfd = make_socket(POSTGRES_IP, POSTGRES_PORT);
+    int sockfd = make_socket(CONSTS::postgres_ip, CONSTS::postgres_port);
 
-    struct epoll_event new_epoll_evt {
-      .events = EPOLLIN,
-      .data = { .fd = new_fd },
+    struct epoll_event new_epoll_evt{
+        .events = EPOLLIN,
+        .data = {.fd = new_fd},
     };
 
-    PROXY_CONNECTIONS[new_fd] = new ProxyConn{new_fd, sockfd, CLIENT};
+    PROXY_CONNECTIONS[new_fd] =
+        new ProxyConn{.client_fd = new_fd, .server_fd = sockfd, .side = CLIENT};
 
     if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, new_fd, &new_epoll_evt) == -1)
       err("Bad new_fd epoll_ctl");
@@ -45,7 +49,8 @@ public:
     new_epoll_evt.data.fd = sockfd;
     new_epoll_evt.events = EPOLLIN;
 
-    PROXY_CONNECTIONS[sockfd] = new ProxyConn{new_fd, sockfd, SERVER};
+    PROXY_CONNECTIONS[sockfd] =
+        new ProxyConn{.client_fd = new_fd, .server_fd = sockfd, .side = SERVER};
 
     if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, sockfd, &new_epoll_evt) == -1)
       err("Bad new proxy_to_server listener epoll_ctl");
@@ -85,11 +90,8 @@ public:
       fwrite(req, 1, length, stdout);
       cout << "'\n";
 
-      char query_buffer[MAX_QUERY_SIZE];
-      int result = process_message(req, length, query_buffer, MAX_QUERY_SIZE);
-      if (result > 0) {
-        log_query(LOG_FP, query_buffer);
-      }
+      std::string buf{(char *)req};
+      logger_p->log(buf);
     }
     my_send(fd, req, length);
   }

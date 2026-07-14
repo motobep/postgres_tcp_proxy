@@ -2,11 +2,16 @@
 #define UTILS
 
 #include <arpa/inet.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdio>
 
-#define BUFFER_SIZE 1024 * 1024
+#include <iostream>
+#include <format>
+
+#include "./consts.cpp"
+
+
+using std::cout;
+using std::endl;
 
 inline void err(const char *msg) {
   perror(msg);
@@ -15,14 +20,14 @@ inline void err(const char *msg) {
 
 inline void print_bytes_as_hex(const unsigned char *buffer, size_t length) {
   for (size_t i = 0; i < length; i++) {
-    printf("%02X ", buffer[i]);
+      cout << std::format("{:02X} ", buffer[i]);
   }
-  printf("\n");
+  cout << "\n";
 }
 
 inline void fill_sockaddr_in(struct sockaddr_in *server_addr, const char *ip,
                              uint16_t port) {
-  struct in_addr local_ip;
+  struct in_addr local_ip{};
   int ok = inet_pton(AF_INET, ip, &local_ip);
   if (ok <= 0)
     err("Invalid address");
@@ -31,7 +36,7 @@ inline void fill_sockaddr_in(struct sockaddr_in *server_addr, const char *ip,
   server_addr->sin_port = htons(port);
   server_addr->sin_family = AF_INET;
 
-  printf("Filled server sockaddr_in for '%s:%d'\n", ip, port);
+  cout << std::format("Filled server sockaddr_in for '{}:{}'\n", ip, port);
 }
 
 inline ssize_t my_send(int sockfd, const unsigned char *buffer, size_t length) {
@@ -39,14 +44,14 @@ inline ssize_t my_send(int sockfd, const unsigned char *buffer, size_t length) {
   return send(sockfd, buffer, length, 0);
 }
 
-inline ssize_t my_recv(int sockfd, unsigned char *buffer) {
-  int bytes_received = recv(sockfd, buffer, BUFFER_SIZE - 1, 0);
+/* inline ssize_t my_recv(int sockfd, unsigned char *buffer) {
+  int bytes_received = recv(sockfd, buffer, CONSTS::buffer_size - 1, 0);
   if (bytes_received < 0)
     err("Receive failed");
 
   buffer[bytes_received] = 0;
   // print_bytes_as_hex(buffer, bytes_received);
   return bytes_received;
-}
+} */
 
 #endif
