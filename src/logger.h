@@ -9,8 +9,6 @@
 #include <string.h>
 #include <time.h>
 
-#define MAX_QUERY_SIZE 4096
-
 FILE *logger_init(const char *filename);
 void log_query(FILE *logger, const char *query);
 int parse_simple_query(const unsigned char *buffer, size_t buffer_size,
@@ -35,6 +33,15 @@ FILE *logger_init(const char *filename) {
     return NULL;
   }
   return fp;
+}
+
+int logger_close(FILE *fp) {
+  if (fclose(fp) != 0)
+  {
+      perror("Error closing file");
+      return 1;
+  }
+  return 0;
 }
 
 void log_query(FILE *fp, const char *query) {
