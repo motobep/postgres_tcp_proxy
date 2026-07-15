@@ -45,6 +45,7 @@ void Merger::update_is_startup() {
     is_startup = false;
   }
 }
+
 uint32_t Merger::read_len() {
   if (is_startup) {
     len = ntohl(*(uint32_t *)(buf.c_str()));

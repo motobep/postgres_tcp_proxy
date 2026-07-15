@@ -38,15 +38,4 @@ inline ssize_t my_send(int sockfd, const unsigned char *buffer, size_t length) {
   // print_bytes_as_hex(buffer, length);
   return send(sockfd, buffer, length, 0);
 }
-
-/* inline ssize_t my_recv(int sockfd, unsigned char *buffer) {
-  int bytes_received = recv(sockfd, buffer, CONSTS::buffer_size - 1, 0);
-  if (bytes_received < 0)
-    err("Receive failed");
-
-  buffer[bytes_received] = 0;
-  // print_bytes_as_hex(buffer, bytes_received);
-  return bytes_received;
-} */
-
 #endif

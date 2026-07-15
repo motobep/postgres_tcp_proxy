@@ -18,7 +18,11 @@ Connection::Connection(std::shared_ptr<Logger> logger)
 Connection::~Connection() {
   // Could use EPOLL_CTL_DEL before closing fds, but we let the kernel do it
 
-  // WARNING: close() may fail/error
+  /**
+   * WARNING: close() may fail/error
+   * If you want a proper close without errors or data loss do this:
+   * https://blog.netherlabs.nl/articles/2009/01/18/the-ultimate-so_linger-page-or-why-is-my-tcp-not-reliable
+   */
   cout << "Closing S " << fds->server_fd << endl;
   close(fds->server_fd);
   cout << "Closing C " << fds->client_fd << endl;
@@ -76,6 +80,10 @@ void Connection::handle_reqest(int sockfd, unsigned char *req, size_t length) {
         cout << "Q query: ";
       } else if (msg[0] == 'P') {
         cout << "P query: ";
+        /**
+         * P [length: 4 bytes] [statement_name: string] [query: string]
+         * [num_param_types: 2 bytes] [param_type_oids: 4 bytes each]
+         */
       }
       cout << std::format("'{}'\n", query);
       logger_p->log(query);

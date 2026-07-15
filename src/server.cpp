@@ -112,13 +112,8 @@ int main(int argc, char *argv[]) {
           }
         } else {
           // cout << "Handle tcp client message\n";
-
-          // int rec_size = sizeof(msg.data());
-          // cout << "rec_size: " << rec_size << endl;
           msg_len = recv(sockfd, msg.data(), CONSTS::buffer_size, 0);
-          // cout << "\tafter recv\n";
           if (msg_len > 0) {
-            msg.at(msg_len) = 0;
             cout << std::format(">> (Proxying fd {} [{}]) ", sockfd, msg_len);
             // print_bytes_as_hex(msg, msg_len);
             auto conn = connectionsPool.get(sockfd);

@@ -18,8 +18,3 @@ void Logger::log(const std::string &query) {
   fout << std::format("[{:%Y-%m-%d %H:%M:%S}] Query: {}\n", now, query);
   fout.flush();
 }
-
-/**
- * P [length: 4 bytes] [statement_name: string] [query: string]
- * [num_param_types: 2 bytes] [param_type_oids: 4 bytes each]
- */
