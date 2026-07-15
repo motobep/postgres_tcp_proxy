@@ -1,5 +1,5 @@
 CXX=g++
-FLAGS=-Wall
+FLAGS=-Wall -std=c++20
 SRC=./src
 
 
