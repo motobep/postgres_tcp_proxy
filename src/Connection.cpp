@@ -1,3 +1,5 @@
+#include "Connection.h"
+
 #include <arpa/inet.h>
 #include <sys/epoll.h>
 #include <unistd.h>
@@ -5,7 +7,6 @@
 #include <iostream>
 #include <string>
 
-#include "Connection.h"
 #include "consts.h"
 #include "utils.h"
 
@@ -29,7 +30,7 @@ Connection::~Connection() {
   close(fds->client_fd);
 }
 
-const ProxyConnFds &Connection::create_connection(int epoll_fd,
+const ProxyConnFds& Connection::create_connection(int epoll_fd,
                                                   int client_sock_fd) {
   int pg_sock_fd = make_socket(CONSTS::postgres_ip, CONSTS::postgres_port);
 
@@ -56,7 +57,7 @@ const ProxyConnFds &Connection::create_connection(int epoll_fd,
   return *fds;
 }
 
-void Connection::handle_reqest(int sockfd, unsigned char *req, size_t length) {
+void Connection::handle_reqest(int sockfd, unsigned char* req, size_t length) {
   int fd{-1};
   if (sockfd == fds->server_fd) {
     cout << "Postgres -> Client ";
@@ -94,7 +95,7 @@ void Connection::handle_reqest(int sockfd, unsigned char *req, size_t length) {
   my_send(fd, req, length);
 }
 
-int Connection::make_socket(const char *ip, uint16_t port) {
+int Connection::make_socket(const char* ip, uint16_t port) {
   struct sockaddr_in server_addr{};
   int sockfd = -1;
 
@@ -102,7 +103,7 @@ int Connection::make_socket(const char *ip, uint16_t port) {
     err("Socket creation failed");
   fill_sockaddr_in(&server_addr, ip, port);
 
-  if (connect(sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0)
+  if (connect(sockfd, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0)
     err("Connection failed");
 
   cout << "=== PG sockfd: " << sockfd << endl;

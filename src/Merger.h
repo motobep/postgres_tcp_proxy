@@ -10,12 +10,12 @@ class Merger {
   std::string buf = "";
   bool is_startup = true;
 
-public:
+ public:
   std::queue<std::string> messages{};
 
-  void add(unsigned char *req, size_t length);
+  void add(unsigned char* req, size_t length);
 
-private:
+ private:
   bool has_enough();
 
   void update_is_startup();

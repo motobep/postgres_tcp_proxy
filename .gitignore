@@ -3,6 +3,9 @@
 !README.md
 !README.ru.md
 !LICENSE
+!.clang-tidy
+!.clang-format
+!.clangd
 
 !Makefile
 !docker-compose.yml

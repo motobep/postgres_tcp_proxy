@@ -14,13 +14,13 @@
 using std::cout;
 using std::endl;
 
-int make_tcp_listener(const char *server_ip, uint16_t server_port);
-bool str_to_uint16(const char *str, uint16_t *res);
+int make_tcp_listener(const char* server_ip, uint16_t server_port);
+bool str_to_uint16(const char* str, uint16_t* res);
 
 class ConnectionsPool {
   std::map<int, std::shared_ptr<Connection>> connections;
 
-public:
+ public:
   std::shared_ptr<Connection> get(int sockfd) { return connections[sockfd]; }
   void add(std::shared_ptr<Connection> conn) {
     connections[conn->fds->client_fd] = conn;
@@ -33,11 +33,11 @@ public:
   }
 };
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
   // WARNING: May error on bad args
-  std::span<char *> args(argv, argc);
-  char *log_file = args[1];
-  char *server_ip = args[2];
+  std::span<char*> args(argv, argc);
+  char* log_file = args[1];
+  char* server_ip = args[2];
 
   uint16_t server_port{0};
   if (!str_to_uint16(args[3], &server_port)) {
@@ -95,11 +95,10 @@ int main(int argc, char *argv[]) {
       if (events & EPOLLIN) {
         if (sockfd == tcp_listener) {
           cout << "Accept connection\n";
-          new_fd = accept(tcp_listener, (struct sockaddr *)&client_addr,
+          new_fd = accept(tcp_listener, (struct sockaddr*)&client_addr,
                           &client_addr_len);
 
-          if (new_fd == -1)
-            err("Bad new_fd");
+          if (new_fd == -1) err("Bad new_fd");
 
           if (new_fd > 0) {
             auto conn = std::make_shared<Connection>(logger_p);
@@ -134,34 +133,31 @@ int main(int argc, char *argv[]) {
   return 0;
 }
 
-int make_tcp_listener(const char *server_ip, uint16_t server_port) {
+int make_tcp_listener(const char* server_ip, uint16_t server_port) {
   struct sockaddr_in server_addr{};
   fill_sockaddr_in(&server_addr, server_ip, server_port);
 
   int listener_fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
   // printf("tcp_listener_fd: %d\n", listener_fd);
-  if (listener_fd == -1)
-    err("Bad socket");
+  if (listener_fd == -1) err("Bad socket");
 
   int opt_val{1};
 
   int ok1 = setsockopt(listener_fd, SOL_SOCKET, SO_REUSEADDR, &opt_val,
                        sizeof(opt_val));
-  if (ok1 != 0)
-    err("Bad setsockopt");
+  if (ok1 != 0) err("Bad setsockopt");
 
   int ok2 =
-      bind(listener_fd, (struct sockaddr *)&server_addr, sizeof(server_addr));
-  if (ok2 != 0)
-    err("Bad bind");
+      bind(listener_fd, (struct sockaddr*)&server_addr, sizeof(server_addr));
+  if (ok2 != 0) err("Bad bind");
 
   cout << "Tcp Start listening\n";
   listen(listener_fd, SOMAXCONN);
   return listener_fd;
 }
 
-bool str_to_uint16(const char *str, uint16_t *res) {
-  char *end{};
+bool str_to_uint16(const char* str, uint16_t* res) {
+  char* end{};
   errno = 0;
   const int base_ten{10};
   long val = strtol(str, &end, base_ten);
