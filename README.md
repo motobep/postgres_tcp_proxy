@@ -68,7 +68,7 @@ Run test commands in another terminal after running the proxy server
 make docker_stress_test
 ```
 
-- Stress Test - Native
+- Native
 
 Postgres must be configured, listening on 6432 port
 
@@ -85,7 +85,7 @@ pip install -r requirements.txt
 python main.py
 ```
 
-### Result
+## Result
 
 Tested on: CPU 8-core 3.6 Ghz + 16GB RAM
 
