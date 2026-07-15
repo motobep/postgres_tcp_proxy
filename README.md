@@ -32,6 +32,7 @@ Optional: In a 3-rd terminal (if you want to test for a big query):
 ```bash
 cd py
 python -m venv venv
+source ./venv/bin/activate
 pip install -r requirements.txt
 python main.py
 ```
@@ -81,6 +82,7 @@ In another terminal
 ```bash
 cd py
 python -m venv venv
+source ./venv/bin/activate
 pip install -r requirements.txt
 python main.py
 ```

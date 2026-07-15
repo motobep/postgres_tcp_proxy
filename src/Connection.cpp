@@ -79,15 +79,21 @@ void Connection::handle_reqest(int sockfd, unsigned char* req, size_t length) {
       std::string query = msg.substr(CONSTS::pg_len);
       if (msg[0] == 'Q') {
         cout << "Q query: ";
+        cout << std::format("'{}'\n", query);
+        logger_p->log(query);
       } else if (msg[0] == 'P') {
         cout << "P query: ";
         /**
+         * NOTICE: 'P' query can be parsed to log only 'query' field,
+         * but we will print it fully with name and params
+         *
+         * 'P' Query: structure:
          * P [length: 4 bytes] [statement_name: string] [query: string]
          * [num_param_types: 2 bytes] [param_type_oids: 4 bytes each]
          */
+        cout << std::format("'{}'\n", query);
+        logger_p->log(query);
       }
-      cout << std::format("'{}'\n", query);
-      logger_p->log(query);
       merger.messages.pop();
     }
   }
