@@ -15,6 +15,7 @@ bool Logger::is_open() { return fout.is_open(); }
 
 void Logger::log(const std::string& query) {
   auto now = std::chrono::system_clock::now();
+  // Notice: may fail if the file was deleted, etc.
   fout << std::format("[{:%Y-%m-%d %H:%M:%S}] Query: {}\n", now, query);
   fout.flush();
 }
