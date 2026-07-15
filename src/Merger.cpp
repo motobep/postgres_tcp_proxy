@@ -62,6 +62,7 @@ uint32_t Merger::read_len() {
 }
 
 void Merger::read_buffer() {
-  messages.push(buf.substr(0, len));  // read part
-  buf = buf.substr(len);              // left part
+  const uint32_t to = len - 1;       // removing \0 char
+  messages.push(buf.substr(0, to));  // read part
+  buf = buf.substr(len);             // left part
 }
