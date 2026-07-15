@@ -16,19 +16,10 @@ public:
   Logger(Logger &&) = delete;
   Logger &operator=(Logger &&) = delete;
 
-  bool is_open();
-  void log_query(const char *query);
-
   ~Logger();
 
-  bool log(const std::string &req);
-
-private:
-  int process_message(const std::string &buffer, std::string &query_out);
-
-  int parse_simple_query(const std::string &buffer, std::string &query_out);
-
-  int parse_prepared_query(const std::string &buffer, std::string &query_out);
+  bool is_open();
+  void log(const std::string &query);
 };
 
 #endif

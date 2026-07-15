@@ -81,7 +81,7 @@ int main(int argc, char *argv[]) {
 
   while (true) {
     const int epoll_timeout = -1;
-    // Uncomment bello If you want Non-blocking epoll behaviour
+    // Uncomment bellow If you want Non-blocking epoll behaviour
     // const int epoll_timeout = 500;
     eventsCount = epoll_wait(epoll_fd, epollEvents.data(),
                              CONSTS::max_epoll_events, epoll_timeout);
@@ -113,11 +113,13 @@ int main(int argc, char *argv[]) {
         } else {
           // cout << "Handle tcp client message\n";
 
-          msg_len = recv(sockfd, msg.data(), sizeof(msg.data()), 0);
+          // int rec_size = sizeof(msg.data());
+          // cout << "rec_size: " << rec_size << endl;
+          msg_len = recv(sockfd, msg.data(), CONSTS::buffer_size, 0);
           // cout << "\tafter recv\n";
           if (msg_len > 0) {
             msg.at(msg_len) = 0;
-            cout << ">> Proxying fd " << sockfd << endl;
+            cout << std::format(">> (Proxying fd {} [{}]) ", sockfd, msg_len);
             // print_bytes_as_hex(msg, msg_len);
             auto conn = connectionsPool.get(sockfd);
             conn->handle_reqest(sockfd, msg.data(), msg_len);

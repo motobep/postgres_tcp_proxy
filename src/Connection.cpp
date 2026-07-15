@@ -3,8 +3,10 @@
 #include <unistd.h>
 
 #include <iostream>
+#include <string>
 
 #include "Connection.h"
+#include "consts.h"
 #include "utils.h"
 
 using std::cout;
@@ -53,20 +55,34 @@ const ProxyConnFds &Connection::create_connection(int epoll_fd,
 void Connection::handle_reqest(int sockfd, unsigned char *req, size_t length) {
   int fd{-1};
   if (sockfd == fds->server_fd) {
-    cout << "Postgres -> Client\n";
+    cout << "Postgres -> Client ";
     fd = fds->client_fd;
   } else {
-    cout << "Client -> Postgres\n";
+    cout << "Client -> Postgres ";
     fd = fds->server_fd;
 
-    // Logging
-    cout << "send (" << sockfd << "): '";
-    fwrite(req, 1, length, stdout);
-    cout << "'\n";
+    // for debug
+    // cout << std::format("| send ({}) [{}]: '", sockfd, length);
+    // std::cout.write((char *)req, static_cast<long>(length));
+    // cout << "'\n";
 
-    std::string buf{(char *)req};
-    logger_p->log(buf);
+    // Logging
+    merger.add(req, length);
+    while (merger.messages.size() > 0) {
+      std::string msg = merger.messages.front();
+
+      std::string query = msg.substr(CONSTS::pg_len);
+      if (msg[0] == 'Q') {
+        cout << "Q query: ";
+      } else if (msg[0] == 'P') {
+        cout << "P query: ";
+      }
+      cout << std::format("'{}'\n", query);
+      logger_p->log(query);
+      merger.messages.pop();
+    }
   }
+
   my_send(fd, req, length);
 }
 

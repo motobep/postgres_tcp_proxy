@@ -2,6 +2,7 @@
 #include <memory>
 
 #include "Logger.h"
+#include "Merger.h"
 
 struct ProxyConnFds {
   int client_fd;
@@ -10,6 +11,7 @@ struct ProxyConnFds {
 
 class Connection {
   std::shared_ptr<Logger> logger_p;
+  Merger merger{};
 
 public:
   std::unique_ptr<ProxyConnFds> fds;
